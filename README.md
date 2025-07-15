@@ -1,0 +1,1 @@
+Home Assistant Comfoair integration.
