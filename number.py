@@ -2,20 +2,14 @@
 
 import logging
 
-from homeassistant.components.number import (
-    NumberEntity,
-    NumberDeviceClass, NumberMode
-)
-from homeassistant.const import UnitOfTemperature
+from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MyConfigEntry
-from .const import DOMAIN
-from .coordinator import ExampleCoordinator, Device
+from .coordinator import CACoordinator, Device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +21,7 @@ async def async_setup_entry(
 ):
     """Set up the Sensors."""
     # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
-    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    coordinator: CACoordinator = config_entry.runtime_data.coordinator
 
     # Enumerate all the sensors in your data value from your DataUpdateCoordinator and add an instance of your sensor class
     # to a list for each one.
@@ -35,7 +29,7 @@ async def async_setup_entry(
     sensors = [
         CANumber(coordinator, device)
         for device in coordinator.data.devices
-        if device.device_type == 'number'
+        if device.device_type == "number"
     ]
 
     # Create the sensors.
@@ -45,7 +39,7 @@ async def async_setup_entry(
 class CANumber(CoordinatorEntity, NumberEntity):
     """Implementation of a sensor."""
 
-    def __init__(self, coordinator: ExampleCoordinator, device: Device) -> None:
+    def __init__(self, coordinator: CACoordinator, device: Device) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
         self.device = device
@@ -99,4 +93,4 @@ class CANumber(CoordinatorEntity, NumberEntity):
 
     @property
     def mode(self) -> str:
-        return 'box'
+        return "box"

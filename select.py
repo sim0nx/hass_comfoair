@@ -2,22 +2,18 @@
 
 import logging
 
-from homeassistant.components.select import (
-    SelectEntity,
-)
-from homeassistant.const import UnitOfTemperature
+import comfoair.model
+
+from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-import comfoair.model
-from . import MyConfigEntry
-from .const import DOMAIN
-from .coordinator import ExampleCoordinator, Device
-import enum
-_LOGGER = logging.getLogger(__name__)
 
+from . import MyConfigEntry
+from .coordinator import CACoordinator, Device
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -27,7 +23,7 @@ async def async_setup_entry(
 ):
     """Set up the Sensors."""
     # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
-    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    coordinator: CACoordinator = config_entry.runtime_data.coordinator
 
     # Enumerate all the sensors in your data value from your DataUpdateCoordinator and add an instance of your sensor class
     # to a list for each one.
@@ -35,7 +31,7 @@ async def async_setup_entry(
     entities = [
         CASelect(coordinator, device)
         for device in coordinator.data.devices
-        if device.device_type == 'select'
+        if device.device_type == "select"
     ]
 
     # Create the sensors.
@@ -45,7 +41,7 @@ async def async_setup_entry(
 class CASelect(CoordinatorEntity, SelectEntity):
     """Implementation of a sensor."""
 
-    def __init__(self, coordinator: ExampleCoordinator, device: Device) -> None:
+    def __init__(self, coordinator: CACoordinator, device: Device) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
         self.device = device
@@ -77,7 +73,7 @@ class CASelect(CoordinatorEntity, SelectEntity):
     @property
     def options(self) -> list[str]:
         """Return the list of available options."""
-        return ['auto', 'away', 'low', 'middle', 'high']
+        return ["auto", "away", "low", "middle", "high"]
 
     @property
     def current_option(self) -> str:
@@ -102,14 +98,14 @@ class CASelect(CoordinatorEntity, SelectEntity):
 
         match speed:
             case comfoair.model.SetFanSpeed.away:
-                return 'mdi:fan-chevron-down'
+                return "mdi:fan-chevron-down"
             case comfoair.model.SetFanSpeed.auto:
-                return 'mdi:fan-auto'
+                return "mdi:fan-auto"
             case comfoair.model.SetFanSpeed.low:
-                return 'mdi:fan-speed-1'
+                return "mdi:fan-speed-1"
             case comfoair.model.SetFanSpeed.middle:
-                return 'mdi:fan-speed-2'
+                return "mdi:fan-speed-2"
             case comfoair.model.SetFanSpeed.high:
-                return 'mdi:fan-speed-3'
+                return "mdi:fan-speed-3"
             case _:
-                return 'mdi:fan-alert'
+                return "mdi:fan-alert"

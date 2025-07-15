@@ -5,26 +5,15 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import voluptuous as vol
-
-from homeassistant.config_entries import (
-    ConfigEntry,
-    ConfigFlow,
-    ConfigFlowResult,
-    OptionsFlow,
-)
-from homeassistant.const import (
-    CONF_HOST,
-    CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
-    CONF_PORT,
-)
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
 import comfoair
 import comfoair.asyncio
-from .api import API, APIAuthError, APIConnectionError
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
+
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,21 +40,15 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     #     your_validate_func, data[CONF_USERNAME], data[CONF_PASSWORD]
     # )
 
-    api_url = f'socket://{data[CONF_HOST]}:{data[CONF_PORT]}'
+    api_url = f"socket://{data[CONF_HOST]}:{data[CONF_PORT]}"
     api = comfoair.asyncio.ComfoAir(api_url)
 
-    try:
-        await hass.async_add_executor_job(api.connect)
-        # If you cannot connect, raise CannotConnect
-        # If the authentication is wrong, raise InvalidAuth
-    except APIAuthError as err:
-        raise InvalidAuth from err
-    except APIConnectionError as err:
-        raise CannotConnect from err
+    await hass.async_add_executor_job(api.connect)
+
     return {"title": f"Example Integration - {data[CONF_HOST]}"}
 
 
-class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
+class CAConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Example Integration."""
 
     VERSION = 1
@@ -75,9 +58,7 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
-        # Remove this method and the ExampleOptionsFlowHandler class
-        # if you do not want any options for your integration.
-        return ExampleOptionsFlowHandler()
+        return CAOptionsFlowHandler()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -94,8 +75,6 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
                 info = await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -131,8 +110,6 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
                 await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -147,16 +124,14 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="reconfigure",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_PORT, default=config_entry.data[CONF_PORT]
-                    ): int,
+                    vol.Required(CONF_PORT, default=config_entry.data[CONF_PORT]): int,
                 }
             ),
             errors=errors,
         )
 
 
-class ExampleOptionsFlowHandler(OptionsFlow):
+class CAOptionsFlowHandler(OptionsFlow):
     """Handles the options flow."""
 
     @property
@@ -176,7 +151,9 @@ class ExampleOptionsFlowHandler(OptionsFlow):
             {
                 vol.Required(
                     CONF_SCAN_INTERVAL,
-                    default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    default=self.config_entry.options.get(
+                        CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+                    ),
                 ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
             }
         )
@@ -186,7 +163,3 @@ class ExampleOptionsFlowHandler(OptionsFlow):
 
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""
-
-
-class InvalidAuth(HomeAssistantError):
-    """Error to indicate there is invalid auth."""

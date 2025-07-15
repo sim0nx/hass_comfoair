@@ -2,19 +2,14 @@
 
 import logging
 
-from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
-    BinarySensorEntity,
-)
-from homeassistant.components.switch import SwitchDeviceClass
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MyConfigEntry
-from .const import DOMAIN
-from .coordinator import ExampleCoordinator, Device
+from .coordinator import CACoordinator, Device
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +21,7 @@ async def async_setup_entry(
 ):
     """Set up the Binary Sensors."""
     # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
-    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    coordinator: CACoordinator = config_entry.runtime_data.coordinator
 
     # Enumerate all the binary sensors in your data value from your DataUpdateCoordinator and add an instance of your binary sensor class
     # to a list for each one.
@@ -34,7 +29,7 @@ async def async_setup_entry(
     binary_sensors = [
         CABinarySensor(coordinator, device)
         for device in coordinator.data.devices
-        if device.device_type == device.device_type == 'binary_sensor'
+        if device.device_type == device.device_type == "binary_sensor"
     ]
 
     # Create the binary sensors.
@@ -44,7 +39,7 @@ async def async_setup_entry(
 class CABinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Implementation of a sensor."""
 
-    def __init__(self, coordinator: ExampleCoordinator, device: Device) -> None:
+    def __init__(self, coordinator: CACoordinator, device: Device) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
         self.device = device
@@ -91,4 +86,3 @@ class CABinarySensor(CoordinatorEntity, BinarySensorEntity):
         # All entities must have a unique id.  Think carefully what you want this to be as
         # changing it later will cause HA to create new entities.
         return self.device.device_unique_id
-
