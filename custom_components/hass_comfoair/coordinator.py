@@ -7,7 +7,7 @@ import logging
 import typing
 
 import comfoair
-import comfoair.asyncio
+import comfoair.async_api
 import comfoair.model
 
 from homeassistant.components.sensor import SensorDeviceClass
@@ -78,7 +78,7 @@ class CACoordinator(DataUpdateCoordinator):
 
         # Initialise your api here
         self.api_url = f"socket://{self.host}:{self.port}"
-        self.api = comfoair.asyncio.ComfoAir(self.api_url)
+        self.api = comfoair.async_api.ComfoAir(self.api_url)
         self.api.add_attr_event_listener(self.ca_attr_event)
 
         # device information

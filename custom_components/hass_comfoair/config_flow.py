@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 import comfoair
-import comfoair.asyncio
+import comfoair.async_api
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
@@ -41,7 +41,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # )
 
     api_url = f"socket://{data[CONF_HOST]}:{data[CONF_PORT]}"
-    api = comfoair.asyncio.ComfoAir(api_url)
+    api = comfoair.async_api.ComfoAir(api_url)
 
     await hass.async_add_executor_job(api.connect)
 
