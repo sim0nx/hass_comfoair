@@ -1,14 +1,17 @@
-"""Interfaces with the Integration 101 Template api sensors."""
-
 import logging
 
 import comfoair.model
 
-from homeassistant.components.select import SelectEntity
+from homeassistant.components.climate import (
+    ClimateEntity,
+    ClimateEntityFeature,
+    HVACMode,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+import homeassistant.const
 
 from . import MyConfigEntry
 from .coordinator import CACoordinator, Device
@@ -29,23 +32,35 @@ async def async_setup_entry(
     # to a list for each one.
     # This maybe different in your specific case, depending on how your data is structured
     entities = [
-        CASelect(coordinator, device)
+        CAClimateBypass(coordinator, device)
         for device in coordinator.data.devices
-        if device.device_type == "select"
+        if device.device_type == "climate"
     ]
 
     # Create the sensors.
     async_add_entities(entities)
 
 
-class CASelect(CoordinatorEntity, SelectEntity):
-    """Implementation of a sensor."""
+class CAClimateBypass(CoordinatorEntity, ClimateEntity):
+    """Climate entity for bypass."""
+
+    _attr_has_entity_name = True
+    _attr_temperature_unit = homeassistant.const.UnitOfTemperature.CELSIUS
+    _attr_min_temp = 15
+    _attr_max_temp = 27
+    _attr_hvac_modes = [HVACMode.HEAT]
 
     def __init__(self, coordinator: CACoordinator, device: Device) -> None:
         """Initialise sensor."""
         super().__init__(coordinator)
         self.device = device
         self.device_id = device.device_id
+
+        self._attr_name = device.name
+        self._attr_hvac_mode = HVACMode.HEAT
+        self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+        self._attr_target_temperature_step = 1.0
+        self._attr_icon = "mdi:home-thermometer-outline"
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -55,6 +70,8 @@ class CASelect(CoordinatorEntity, SelectEntity):
             self.device.device_type, self.device_id
         )
         _LOGGER.debug("Device: %s", self.device)
+        self._attr_current_temperature = self.device.state
+        self._attr_target_temperature = self.device.state
         self.async_write_ha_state()
 
     @property
@@ -66,49 +83,20 @@ class CASelect(CoordinatorEntity, SelectEntity):
         return self.coordinator.device_info()
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return self.device.name
-
-    @property
-    def options(self) -> list[str]:
-        """Return the list of available options."""
-        return ["auto", "away", "low", "middle", "high"]
-
-    @property
-    def current_option(self) -> str:
-        """Return the state of the entity."""
-        return comfoair.model.SetFanSpeed(self.device.state).name
-
-    @property
     def unique_id(self) -> str:
         """Return unique id."""
         # All entities must have a unique id.  Think carefully what you want this to be as
         # changing it later will cause HA to create new entities.
         return self.device.device_unique_id
 
-    async def async_select_option(self, option: str) -> None:
-        """Select option."""
-        await self.coordinator.change_mode(option)
+    async def async_set_temperature(self, **kwargs):
+        new_temp = kwargs.get(homeassistant.const.ATTR_TEMPERATURE)
+        if new_temp is None:
+            return
+
+        _LOGGER.debug("Setting comfort temperature to %s", new_temp)
+
+        await self.coordinator.set_comfort_temperature(new_temp)
 
         # trigger data refresh
         await self.coordinator.async_request_refresh()
-
-    @property
-    def icon(self) -> str:
-        """Return the icon."""
-        speed = comfoair.model.SetFanSpeed(self.device.state)
-
-        match speed:
-            case comfoair.model.SetFanSpeed.away:
-                return "mdi:fan-chevron-down"
-            case comfoair.model.SetFanSpeed.auto:
-                return "mdi:fan-auto"
-            case comfoair.model.SetFanSpeed.low:
-                return "mdi:fan-speed-1"
-            case comfoair.model.SetFanSpeed.middle:
-                return "mdi:fan-speed-2"
-            case comfoair.model.SetFanSpeed.high:
-                return "mdi:fan-speed-3"
-            case _:
-                return "mdi:fan-alert"

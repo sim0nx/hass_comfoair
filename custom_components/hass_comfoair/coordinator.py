@@ -453,6 +453,18 @@ class CACoordinator(DataUpdateCoordinator):
             )
         )
 
+        self.devices.append(
+            Device(
+                device_id=29,
+                device_unique_id="set_comfort_temperature",
+                device_class=None,
+                device_type="climate",
+                name="set_comfort_temperature",
+                ca_response=comfoair.TEMP_COMFORT,
+                state=None,
+            )
+        )
+
     async def ca_attr_event(
         self, attribute: comfoair.CAReponse, value: typing.Any
     ) -> None:
@@ -469,7 +481,6 @@ class CACoordinator(DataUpdateCoordinator):
         for device in self.devices:
             if device.ca_response == attribute:
                 device.state = value
-                break
 
     def device_info(self) -> DeviceInfo:
         """Return device information."""
@@ -536,3 +547,7 @@ class CACoordinator(DataUpdateCoordinator):
     async def change_mode(self, mode: str) -> None:
         """Change mode."""
         await self.api.set_speed(speed=comfoair.model.SetFanSpeed[mode])
+
+    async def set_comfort_temperature(self, temperature: float) -> None:
+        """Set comfort temperature."""
+        await self.api.set_comfort_temperature(int(temperature))
